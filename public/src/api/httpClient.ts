@@ -1,6 +1,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Testimonial } from '../interfaces/Testimonial';
-import { LoginFormMode, LoginUser, RegistrationUser } from '../interfaces/User';
+import {
+  LoginFormMode,
+  LoginUser,
+  RegistrationUser,
+  UserData
+} from '../interfaces/User';
 import { Product } from '../interfaces/Product';
 import { OidcClient } from '../interfaces/Auth';
 import { ApiUrl } from './ApiUrl';
@@ -51,7 +56,7 @@ export function postSubscriptions(email: string): Promise<any> {
 
 export function postUser(data: RegistrationUser): Promise<any> {
   return makeApiRequest({
-    url: ApiUrl.Users,
+    url: `${ApiUrl.Users}/${data.op}`,
     method: 'post',
     data
   });
@@ -66,6 +71,17 @@ export function getUser(
     url: `${ApiUrl.Auth}/login`,
     method: 'post',
     data,
+    ...config
+  });
+}
+
+export function getUserData(
+  email: string,
+  config: AxiosRequestConfig = {}
+): Promise<UserData> {
+  return makeApiRequest({
+    url: `${ApiUrl.Users}/one/${email.trim()}`,
+    method: 'get',
     ...config
   });
 }

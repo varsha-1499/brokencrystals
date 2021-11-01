@@ -1,9 +1,11 @@
 import React, { ChangeEvent, FC, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUserPhoto, putPhoto } from '../../../api/httpClient';
+import { RoutePath } from 'src/router/RoutePath';
 
 export const Sign: FC = () => {
   const user = sessionStorage.getItem('email');
+  const userName = sessionStorage.getItem('userName');
   const [userImage, setUserImage] = useState<string | null>();
 
   useEffect(() => {
@@ -43,8 +45,12 @@ export const Sign: FC = () => {
               className="profile-image"
             />
           </label>
-          <Link to="/" className="get-started-btn scrollto" onClick={logout}>
-            Log out {user}
+          <Link
+            to={RoutePath.Home}
+            className="get-started-btn scrollto"
+            onClick={logout}
+          >
+            Log out {userName}
           </Link>
           <input
             id="file-input"
@@ -55,7 +61,7 @@ export const Sign: FC = () => {
           />
         </>
       ) : (
-        <a href="/login" className="get-started-btn scrollto">
+        <a href={RoutePath.Login} className="get-started-btn scrollto">
           Sign in
         </a>
       )}

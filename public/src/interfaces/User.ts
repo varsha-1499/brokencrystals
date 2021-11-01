@@ -17,6 +17,7 @@ export enum LoginFormMode {
 export interface LoginResponse {
   email: string;
   ldapProfileLink: string;
+  errorText: string | null;
 }
 
 export interface RegistrationUser {
@@ -24,4 +25,11 @@ export interface RegistrationUser {
   lastName: string;
   firstName: string;
   password?: string;
+  op?: LoginFormMode;
+}
+
+export interface UserData {
+  email: string;
+  lastName: string;
+  firstName: string;
 }

@@ -13,9 +13,11 @@ import { ConfigService } from '@nestjs/config';
 import {
   ApiBody,
   ApiConsumes,
+  ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiProduces,
-  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { spawn } from 'child_process';
@@ -24,9 +26,17 @@ import { parseXml } from 'libxmljs';
 import { AppConfig } from './app.config.api';
 import { AppModuleConfigProperties } from './app.module.config.properties';
 import { OrmModuleConfigProperties } from './orm/orm.module.config.properties';
+import {
+  SWAGGER_DESC_CONFIG_SERVER,
+  SWAGGER_DESC_LAUNCH_COMMAND,
+  SWAGGER_DESC_OPTIONS_REQUEST,
+  SWAGGER_DESC_REDIRECT_REQUEST,
+  SWAGGER_DESC_RENDER_REQUEST,
+  SWAGGER_DESC_XML_METADATA,
+} from './app.controller.swagger.desc';
 
 @Controller('/api')
-@ApiTags('app controller')
+@ApiTags('App controller')
 export class AppController {
   private static readonly XML_ENTITY_INJECTION = '<!DOCTYPE replace [<!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>'.toLowerCase();
   private static readonly XML_ENTITY_INJECTION_RESPONSE = `root:x:0:0:root:/root:/bin/bash
@@ -36,17 +46,16 @@ export class AppController {
 
   constructor(private readonly configService: ConfigService) {}
 
+  @Post('render')
   @ApiProduces('text/plain')
   @ApiConsumes('text/plain')
-  @ApiBody({
-    description:
-      'Template for rendering by doT. Expects plain text as request body',
+  @ApiOperation({
+    description: SWAGGER_DESC_RENDER_REQUEST,
   })
-  @ApiResponse({
+  @ApiBody({ description: 'Write your text here' })
+  @ApiCreatedResponse({
     description: 'Rendered result',
-    status: 200,
   })
-  @Post('render')
   async renderTemplate(@Body() raw): Promise<string> {
     if (typeof raw === 'string' || Buffer.isBuffer(raw)) {
       const text = raw.toString().trim();
@@ -56,20 +65,28 @@ export class AppController {
     }
   }
 
-  @ApiOperation({
-    description: 'Redirects the user to the provided url',
-  })
   @Get('goto')
+  @ApiOperation({
+    description: SWAGGER_DESC_REDIRECT_REQUEST,
+  })
+  @ApiOkResponse({
+    description: 'Redirected',
+  })
   @Redirect()
   async redirect(@Query('url') url: string) {
     return { url };
   }
 
-  @ApiOperation({
-    description:
-      "Receives client's metadata in XML format. Returns the passed XML",
-  })
   @Post('metadata')
+  @ApiOperation({
+    description: SWAGGER_DESC_XML_METADATA,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Invalid data',
+  })
+  @ApiCreatedResponse({
+    description: 'XML passed successfully',
+  })
   @Header('content-type', 'text/xml')
   async xml(@Query('xml') xml: string): Promise<string> {
     if (xml?.toLowerCase() === AppController.XML_ENTITY_INJECTION) {
@@ -90,10 +107,10 @@ export class AppController {
     return xmlDoc.toString(true);
   }
 
-  @ApiOperation({
-    description: 'Returns the list of supported operations',
-  })
   @Options()
+  @ApiOperation({
+    description: SWAGGER_DESC_OPTIONS_REQUEST,
+  })
   @Header('allow', 'OPTIONS, GET, HEAD, POST')
   async getTestOptions(): Promise<void> {
     this.logger.debug('Test OPTIONS');
@@ -101,11 +118,16 @@ export class AppController {
 
   @Get('spawn')
   @ApiOperation({
-    description: 'Launches system command on server',
+    description: SWAGGER_DESC_LAUNCH_COMMAND,
   })
-  @ApiResponse({
+  @ApiOkResponse({
     type: String,
-    status: 200,
+  })
+  @ApiInternalServerErrorResponse({
+    schema: {
+      type: 'object',
+      properties: { location: { type: 'string' } },
+    },
   })
   async launchCommand(@Query('command') command: string): Promise<string> {
     this.logger.debug(`launch ${command} command`);
@@ -136,14 +158,14 @@ export class AppController {
     });
   }
 
+  @Get('/config')
   @ApiOperation({
-    description: 'Returns server configuration to the client',
+    description: SWAGGER_DESC_CONFIG_SERVER,
   })
-  @ApiResponse({
+  @ApiOkResponse({
     type: AppConfig,
     status: 200,
   })
-  @Get('/config')
   getConfig(): AppConfig {
     this.logger.debug('Called getConfig');
     const dbSchema = this.configService.get<string>(
